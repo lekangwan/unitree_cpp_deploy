@@ -1,6 +1,7 @@
 build
 onnxruntime-linux-*
 logs/
+!logs/go2/go2_walk_these_way/
 images
 __pycache__/
 .vscode/
