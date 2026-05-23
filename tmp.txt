@@ -1,0 +1,12 @@
+import onnxruntime as ort
+model_path = './policy.onnx'
+try:
+    sess = ort.InferenceSession(model_path)
+    print('ONNX 模型输入名:')
+    for i, input_info in enumerate(sess.get_inputs()):
+        print(f'  {i}: {input_info.name} - shape: {input_info.shape}')
+    print('ONNX 模型输出名:')
+    for i, output_info in enumerate(sess.get_outputs()):
+        print(f'  {i}: {output_info.name} - shape: {output_info.shape}')
+except Exception as e:
+    print(f'错误: {e}')
