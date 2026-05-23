@@ -102,6 +102,11 @@ public:
         }
         
         action_manager->process_action(action);
+        
+        // Update action history buffer (for models needing last_actions)
+        auto processed = action_manager->processed_actions();
+        last_actions_buffer = prev_actions_buffer;
+        prev_actions_buffer = std::vector<float>(processed.data(), processed.data() + processed.size());
     }
 
     float step_dt;
@@ -114,6 +119,10 @@ public:
     std::unique_ptr<Algorithms> alg;
     long episode_length = 0;
     float global_phase = 0.0f;
+    
+    // Action history buffer (for WalkTheseWay model's actions/last_actions)
+    std::vector<float> prev_actions_buffer;
+    std::vector<float> last_actions_buffer;
     
     std::map<std::string, std::vector<float>> last_inference_results;
 

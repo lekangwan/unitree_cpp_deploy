@@ -145,5 +145,65 @@ REGISTER_OBSERVATION(gait_phase)
     return obs;
 }
 
+// ====================================================================
+// WalkTheseWay 模型专用观测函数（不干扰其他模型）
+// ====================================================================
+
+REGISTER_OBSERVATION(velocity_commands_15d)
+{
+    std::vector<float> obs(15);
+
+    if (env->fixed_command_enabled && env->fixed_command_active) {
+        obs[0] = env->fixed_lin_vel_x;
+        obs[1] = env->fixed_lin_vel_y;
+        obs[2] = env->fixed_ang_vel_z;
+    } else {
+        auto & joy = env->robot->data.joystick;
+        auto cfg = env->cfg["commands"]["base_velocity"]["ranges"];
+        obs[0] = joy->ly();
+        obs[1] = -joy->lx();
+        obs[2] = -joy->rx();
+        auto scale_func = [&cfg](std::vector<float>& o, int idx, const std::string& key) {
+            if (o[idx] > 0) o[idx] *= cfg[key][1].as<float>();
+            else o[idx] *= -cfg[key][0].as<float>();
+        };
+        scale_func(obs, 0, "lin_vel_x");
+        scale_func(obs, 1, "lin_vel_y");
+        scale_func(obs, 2, "ang_vel_z");
+    }
+
+    obs[3] = 0.0f;   obs[4] = 3.0f;
+    obs[5] = 0.0f;   obs[6] = 0.0f;   obs[7] = 0.0f;
+    obs[8] = 0.5f;   obs[9] = 0.08f;
+    obs[10] = 0.0f;  obs[11] = 0.0f;
+    obs[12] = 0.25f; obs[13] = 0.4f;  obs[14] = 0.0f;
+    return obs;
+}
+
+REGISTER_OBSERVATION(actions)
+{
+    auto data = env->action_manager->action();
+    return std::vector<float>(data.data(), data.data() + data.size());
+}
+
+REGISTER_OBSERVATION(last_actions)
+{
+    return env->last_actions_buffer;
+}
+
+REGISTER_OBSERVATION(clock_inputs)
+{
+    float delta = env->step_dt * 3.0f;
+    env->global_phase = std::fmod(env->global_phase + delta, 1.0f);
+
+    float p = env->global_phase;
+    std::vector<float> obs(4);
+    obs[0] = std::sin(2.0f * M_PI * p);
+    obs[1] = std::sin(2.0f * M_PI * std::fmod(p + 0.5f, 1.0f));
+    obs[2] = std::sin(2.0f * M_PI * std::fmod(p + 0.5f, 1.0f));
+    obs[3] = std::sin(2.0f * M_PI * p);
+    return obs;
+}
+
 }
 }
