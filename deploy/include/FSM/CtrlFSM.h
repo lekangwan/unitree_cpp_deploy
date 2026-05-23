@@ -119,4 +119,14 @@ private:
                 {
                     spdlog::info("FSM: Change state from {} to {}", currentState->getStateString(), state->getStateString());
                     currentState->exit();
-          
+                    currentState = state;
+                    currentState->enter();
+                    break;
+                }
+            }
+        }
+    }
+
+    std::shared_ptr<BaseState> currentState;
+    unitree::common::RecurrentThreadPtr fsm_thread_;
+};
