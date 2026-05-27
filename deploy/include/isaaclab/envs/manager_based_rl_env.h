@@ -72,6 +72,13 @@ public:
         {
             observation_manager = std::make_unique<ObservationManager>(cfg["observations"], this);
         }
+
+        // Initialize action history buffers (for models needing last_actions)
+        if (action_manager) {
+            int dim = action_manager->total_action_dim();
+            prev_actions_buffer.assign(dim, 0.0f);
+            last_actions_buffer.assign(dim, 0.0f);
+        }
     }
 
     void reset()
@@ -82,9 +89,8 @@ public:
         if(robot->data.motion_loader) {
             robot->data.motion_loader->reset(robot->data);
         }
-        if (action_manager) action_manager->reset();
-        // Reset action history buffers
         if (action_manager) {
+            action_manager->reset();
             int act_dim = action_manager->total_action_dim();
             prev_actions_buffer.assign(act_dim, 0.0f);
             last_actions_buffer.assign(act_dim, 0.0f);
@@ -104,26 +110,25 @@ public:
             throw std::runtime_error("ManagerBasedRLEnv::step requires observation_manager, action_manager and alg");
         }
         auto obs = observation_manager->compute();
-        
+
         last_inference_results = alg->forward(obs);
-        
+
         std::vector<float> action;
         if (last_inference_results.count("actions")) {
             action = last_inference_results["actions"];
         } else if (!last_inference_results.empty()) {
             action = last_inference_results.begin()->second;
         }
-        
-        action_manager->process_action(action);
-        
-        // Update action history buffer (for models needing last_actions)
-        // Store RAW actions (before scale/offset), matching training observation format
+
+        // Save raw action to history buffers BEFORE processing (for models needing last_actions)
         last_actions_buffer = prev_actions_buffer;
         prev_actions_buffer = action;
+
+        action_manager->process_action(action);
     }
 
     float step_dt;
-    
+
     YAML::Node cfg;
 
     std::unique_ptr<ObservationManager> observation_manager;
@@ -132,11 +137,11 @@ public:
     std::unique_ptr<Algorithms> alg;
     long episode_length = 0;
     float global_phase = 0.0f;
-    
+
     // Action history buffer (for WalkTheseWay model's actions/last_actions)
     std::vector<float> prev_actions_buffer;
     std::vector<float> last_actions_buffer;
-    
+
     std::map<std::string, std::vector<float>> last_inference_results;
 
     // Fixed command control

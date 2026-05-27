@@ -89,8 +89,10 @@ sudo ./go2_ctrl [选项]
 
 下载并编译[unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)中的`simulate/`内容，并配置`simulate/config.yaml`中`domain_id: 0`, `use_joystick: 1`
 ```bash
-./simulate/build/unitree_mujoco  # 启动仿真
-./go2_ctrl -n lo  # 启动控制
+# 启动仿真
+./simulate/build/unitree_mujoco  
+# 启动控制
+./go2_ctrl -n lo  
 ```
 
 ### 操作流程

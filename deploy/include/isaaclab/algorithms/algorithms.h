@@ -51,6 +51,12 @@ public:
         for (const auto& name : input_names_strings) {
             input_names.push_back(name.c_str());
         }
+        // Fix dynamic dimensions (-1) from dynamic_axes in ONNX export
+        for (auto& shape : input_shapes) {
+            for (auto& dim : shape) {
+                if (dim == -1) dim = 1;
+            }
+        }
         for (const auto& shape : input_shapes) {
             size_t size = 1;
             for (const auto& dim : shape) size *= dim;
