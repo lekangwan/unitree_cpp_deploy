@@ -61,6 +61,13 @@ public:
         {
             action_manager = std::make_unique<ActionManager>(cfg["actions"], this);
         }
+        // Initialize action history buffers to zeros so observation terms
+        // (actions, last_actions) have correct dimensionality from the start
+        if (action_manager) {
+            int act_dim = action_manager->total_action_dim();
+            prev_actions_buffer.assign(act_dim, 0.0f);
+            last_actions_buffer.assign(act_dim, 0.0f);
+        }
         if (cfg["observations"])
         {
             observation_manager = std::make_unique<ObservationManager>(cfg["observations"], this);
@@ -76,6 +83,12 @@ public:
             robot->data.motion_loader->reset(robot->data);
         }
         if (action_manager) action_manager->reset();
+        // Reset action history buffers
+        if (action_manager) {
+            int act_dim = action_manager->total_action_dim();
+            prev_actions_buffer.assign(act_dim, 0.0f);
+            last_actions_buffer.assign(act_dim, 0.0f);
+        }
         if (observation_manager) observation_manager->reset();
     }
 
@@ -104,9 +117,9 @@ public:
         action_manager->process_action(action);
         
         // Update action history buffer (for models needing last_actions)
-        auto processed = action_manager->processed_actions();
+        // Store RAW actions (before scale/offset), matching training observation format
         last_actions_buffer = prev_actions_buffer;
-        prev_actions_buffer = std::vector<float>(processed.data(), processed.data() + processed.size());
+        prev_actions_buffer = action;
     }
 
     float step_dt;
