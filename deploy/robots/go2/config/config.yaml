@@ -27,7 +27,7 @@ FSM:
   Velocity_Down:
     transitions: {Passive: LT + B.on_pressed, Velocity_Up: start + up}
     policy_dir: ../../../logs/go2/go2_walk_these_way
-    logging: false
-    logging_dt: 0.01
+    logging: true
+    logging_dt: 0.02
     fixed_command: {enabled: true, lin_vel_x: 0.5, lin_vel_y: 0.0, ang_vel_z: 0.0,
       duration: 0.0}

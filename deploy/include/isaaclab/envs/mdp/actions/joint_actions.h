@@ -23,10 +23,10 @@ public:
             _joint_ids = cfg["joint_ids"].as<std::vector<int>>();
             _action_dim = _joint_ids.size();
         }
-        _raw_actions.resize(_action_dim, 0.0f);
-        _processed_actions.resize(_action_dim, 0.0f);
         _scale = cfg["scale"].as<std::vector<float>>();
         _offset = cfg["offset"].as<std::vector<float>>();
+        _raw_actions.resize(_action_dim, 0.0f);
+        _processed_actions = _offset;  // initialize to default pose, not zeros
 
         if(!cfg["clip"].IsNull())
         {
@@ -69,6 +69,7 @@ public:
     void reset()
     {
         _raw_actions.assign(_action_dim, 0.0f);
+        _processed_actions = _offset;
     }
 
 protected:
