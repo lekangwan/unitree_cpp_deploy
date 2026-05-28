@@ -55,7 +55,8 @@ sudo apt install libboost-program-options-dev libyaml-cpp-dev libeigen3-dev libf
    ```bash
    cmake .. && make -j8
    ```
-
+/workspace/unitree_cpp_deploy_git/deploy/thirdparty/onnxruntime-linux-x64-1.23.2
+/workspace/unitree_cpp_deploy/deploy/thirdparty
 ## 运行指南
 
 编译完成后，在 `build` 目录下运行生成的 `go2_ctrl` 可执行文件。
@@ -80,6 +81,7 @@ sudo ./go2_ctrl [选项]
 
 在NX上启动, 下位机网卡假设为 `eth0`
 ```bash
+cd /workspace/unitree_cpp_deploy/deploy/robots/go2/build
 ./go2_ctrl -n eth0
 ```
 
@@ -93,7 +95,10 @@ sudo ./go2_ctrl [选项]
 ./simulate/build/unitree_mujoco  
 # 启动控制
 ./go2_ctrl -n lo  
+
+
 ```
+
 
 ### 操作流程
 

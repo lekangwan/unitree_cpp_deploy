@@ -96,6 +96,7 @@ private:
             else if (key == "2") nextStateMode = FSMStringMap.right.at("FixStand");
             else if (key == "3") nextStateMode = FSMStringMap.right.at("Velocity_Up");
             else if (key == "4") nextStateMode = FSMStringMap.right.at("Velocity_Down");
+            else if (key == "5") nextStateMode = FSMStringMap.right.at("Velocity_Left");
         }
 
         if (nextStateMode == 0) {
