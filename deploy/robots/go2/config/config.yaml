@@ -20,20 +20,20 @@ FSM:
     - [0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 1.0, -1.5, 0.0, 1.0, -1.5]
   Velocity_Up:
     transitions: {Passive: LT + B.on_pressed, Velocity_Down: start + down, Velocity_Left: start + left}
-    policy_dir: ../../../logs/go2/go2_cts
+    policy_dir: ../../../logs/go2/go2_dreamwaq
     logging: false
     logging_dt: 0.01
     fixed_command: {enabled: true, lin_vel_x: 1.0, lin_vel_y: 0.0, ang_vel_z: 0.0,
       duration: 3.0}
   Velocity_Down:
     transitions: {Passive: LT + B.on_pressed, Velocity_Up: start + up, Velocity_Left: start + left}
-    policy_dir: ../../../logs/go2/go2_walk_these_way
+    policy_dir: ../../../logs/go2/go2_moe_cts_self_103.5k_0.6669
     logging: true
     logging_dt: 0.02
     fixed_command: {enabled: true, lin_vel_x: 0.5, lin_vel_y: 0.0, ang_vel_z: 0.0,
       duration: 0.0}
   Velocity_Left:
     transitions: {Passive: LT + B.on_pressed, Velocity_Up: start + up, Velocity_Down: start + down}
-    policy_dir: ../../../logs/go2/go2_cts_kaiwu
+    policy_dir: ../../../logs/go2/go2_walk_these_way
     logging: false
     logging_dt: 0.01
