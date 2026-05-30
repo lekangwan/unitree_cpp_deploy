@@ -41,6 +41,8 @@ struct ArticulationData
     unitree::common::UnitreeJoystick* joystick = nullptr;
 
     isaaclab::MotionLoader* motion_loader = nullptr;
+
+    std::vector<float> foot_force = std::vector<float>(4, 0.0f);
 };
 
 class Articulation

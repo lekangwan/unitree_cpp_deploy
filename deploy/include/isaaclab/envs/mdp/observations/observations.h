@@ -205,5 +205,69 @@ REGISTER_OBSERVATION(clock_inputs)
     return obs;
 }
 
+// ====================================================================
+// SlipDog 模型专用观测函数
+// ====================================================================
+
+REGISTER_OBSERVATION(imu_angles)
+{
+    // Returns [roll, pitch] from IMU quaternion
+    auto & quat = env->robot->data.root_quat_w;
+    float w = quat.w(), x = quat.x(), y = quat.y(), z = quat.z();
+    float roll = std::atan2(2.0f * (w * x + y * z), 1.0f - 2.0f * (x * x + y * y));
+    float pitch = std::asin(2.0f * (w * y - z * x));
+    return {roll, pitch};
+}
+
+REGISTER_OBSERVATION(foot_contact)
+{
+    // Returns foot contact state (contact - 0.5), 4 feet
+    // Contact = force > 10N threshold
+    std::vector<float> obs(4);
+    for (int i = 0; i < 4; ++i) {
+        float force = env->robot->data.foot_force[i];
+        float contact = (force > 10.0f) ? 1.0f : 0.0f;
+        obs[i] = contact - 0.5f;
+    }
+    return obs;
+}
+
+REGISTER_OBSERVATION(zero_vec_12)
+{
+    return std::vector<float>(12, 0.0f);
+}
+
+REGISTER_OBSERVATION(slip_dog_commands)
+{
+    // 7-dim commands: lin_vel_x, lin_vel_y, ang_vel_yaw, jump_height, locomotion_height, eps, class
+    std::vector<float> obs(7, 0.0f);
+
+    if (env->fixed_command_enabled && env->fixed_command_active) {
+        obs[0] = env->fixed_lin_vel_x;
+        obs[1] = env->fixed_lin_vel_y;
+        obs[2] = env->fixed_ang_vel_z;
+    } else {
+        auto & joystick = env->robot->data.joystick;
+        auto cfg = env->cfg["commands"]["base_velocity"]["ranges"];
+
+        auto scale_func = [cfg](float val, const std::string& key) -> float {
+            if (val > 0) return val * cfg[key][1].as<float>();
+            else return val * -cfg[key][0].as<float>();
+        };
+
+        obs[0] = scale_func(joystick->ly(), "lin_vel_x");
+        obs[1] = scale_func(-joystick->lx(), "lin_vel_y");
+        obs[2] = scale_func(-joystick->rx(), "ang_vel_z");
+    }
+
+    // Hardcoded gait parameters for trot deployment
+    obs[3] = 0.0f;   // jump_height = 0 (no jump)
+    obs[4] = 0.29f;  // locomotion_height = 0.29 (default from config)
+    obs[5] = 0.0f;   // latent_eps = 0
+    obs[6] = 0.0f;   // latent_c = 0
+
+    return obs;
+}
+
 }
 }

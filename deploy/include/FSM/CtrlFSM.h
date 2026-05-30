@@ -98,6 +98,8 @@ private:
             else if (key == "4") nextStateMode = FSMStringMap.right.at("Velocity_Down");
             else if (key == "5") nextStateMode = FSMStringMap.right.at("Velocity_Left");
             else if (key == "6") nextStateMode = FSMStringMap.right.at("Velocity_Right");
+            else if (key == "7") nextStateMode = FSMStringMap.right.at("Velocity_SlipDog");
+            else if (key == "8") nextStateMode = FSMStringMap.right.at("Velocity_Dreamwaq");
         }
 
         if (nextStateMode == 0) {

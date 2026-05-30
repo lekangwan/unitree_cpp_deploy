@@ -37,6 +37,10 @@ public:
             data.joint_pos[i] = lowstate->msg_.motor_state()[data.joint_ids_map[i]].q();
             data.joint_vel[i] = lowstate->msg_.motor_state()[data.joint_ids_map[i]].dq();
         }
+        // foot force
+        for(int i(0); i<4; i++) {
+            data.foot_force[i] = lowstate->msg_.foot_force()[i];
+        }
     }
 
     LowStatePtr lowstate;
