@@ -10,8 +10,10 @@ std::shared_ptr<Keyboard> FSMState::keyboard = nullptr;
 void print_keyboard_help()
 {
     std::cout << "\n--- Keyboard Controls ---\n";
-    std::cout << "  [1] Passive    [2] FixStand    [3] Forward    [4] Backward\n";
-    std::cout << "  [5] Strafe Left    [6] Strafe Right\n";
+    std::cout << "  [1] Passive        [2] FixStand\n";
+    std::cout << "  [3] CTS            [4] MoE-CTS\n";
+    std::cout << "  [5] WalkTheseWay   [6] HIMLOCO\n";
+    std::cout << "  [7] SlipDog        [8] DreamWaQ\n";
     std::cout << "  W/↑: Forward    S/↓: Backward\n";
     std::cout << "  A/←: Strafe Left    D/→: Strafe Right\n";
     std::cout << "  Q/RotL    E/RotR    Space: Stop\n";
@@ -57,7 +59,7 @@ int main(int argc, char** argv)
 
     std::cout << "Press [L2 + A] to enter FixStand mode.\n";
     std::cout << "Then press [Start + Up/Down/Left/Right] to select and start a policy.\n";
-    std::cout << "Or use keyboard [1-6] to switch states and WASD/arrows to drive.\n";
+    std::cout << "Or use keyboard [1-8] to switch states and WASD/arrows to drive.\n";
     print_keyboard_help();
 
     while (true)
