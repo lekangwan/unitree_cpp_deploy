@@ -172,11 +172,18 @@ REGISTER_OBSERVATION(velocity_commands_15d)
         scale_func(obs, 2, "ang_vel_z");
     }
 
-    obs[3] = 0.0f;   obs[4] = 3.0f;
-    obs[5] = 0.0f;   obs[6] = 0.0f;   obs[7] = 0.0f;
-    obs[8] = 0.5f;   obs[9] = 0.08f;
-    obs[10] = 0.0f;  obs[11] = 0.0f;
-    obs[12] = 0.25f; obs[13] = 0.4f;  obs[14] = 0.0f;
+    obs[3] = env->body_height;
+    obs[4] = env->gait_frequency;
+    obs[5] = env->gait_phase_fl;
+    obs[6] = env->gait_phase_fr;
+    obs[7] = env->gait_phase_rl;
+    obs[8] = env->gait_duration;
+    obs[9] = env->footswing_height;
+    obs[10] = env->body_pitch;
+    obs[11] = env->body_roll;
+    obs[12] = env->stance_width;
+    obs[13] = env->stance_length;
+    obs[14] = env->aux_reward;
     return obs;
 }
 

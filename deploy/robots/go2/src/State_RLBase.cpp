@@ -67,6 +67,26 @@ State_RLBase::State_RLBase(int state_mode, std::string state_string)
             spdlog::info("Press [L2 + Y] to toggle fixed command execution");
         }
     }
+
+    // Initialize gait parameters (for WalkTheseWay / models with 15d commands)
+    // Read from deploy.yaml (env->cfg), not config.yaml
+    if (env && env->cfg["gait_params"]) {
+        auto gp = env->cfg["gait_params"];
+        if (gp["gait_frequency"]) env->gait_frequency = gp["gait_frequency"].as<float>();
+        if (gp["footswing_height"]) env->footswing_height = gp["footswing_height"].as<float>();
+        if (gp["body_height"]) env->body_height = gp["body_height"].as<float>();
+        if (gp["body_pitch"]) env->body_pitch = gp["body_pitch"].as<float>();
+        if (gp["body_roll"]) env->body_roll = gp["body_roll"].as<float>();
+        if (gp["stance_width"]) env->stance_width = gp["stance_width"].as<float>();
+        if (gp["stance_length"]) env->stance_length = gp["stance_length"].as<float>();
+        if (gp["gait_duration"]) env->gait_duration = gp["gait_duration"].as<float>();
+        if (gp["gait_phase_fl"]) env->gait_phase_fl = gp["gait_phase_fl"].as<float>();
+        if (gp["gait_phase_fr"]) env->gait_phase_fr = gp["gait_phase_fr"].as<float>();
+        if (gp["gait_phase_rl"]) env->gait_phase_rl = gp["gait_phase_rl"].as<float>();
+        if (gp["aux_reward"]) env->aux_reward = gp["aux_reward"].as<float>();
+        spdlog::info("Gait params: freq={:.1f}Hz, footswing={:.3f}m, body_h={:.3f}, pitch={:.2f}, roll={:.2f}",
+            env->gait_frequency, env->footswing_height, env->body_height, env->body_pitch, env->body_roll);
+    }
 }
 
 void State_RLBase::run()

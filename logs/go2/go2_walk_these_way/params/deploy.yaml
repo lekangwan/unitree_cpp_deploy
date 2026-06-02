@@ -12,6 +12,21 @@ commands:
       ang_vel_z: [-1.0, 1.0]
       heading: null
 
+# Gait parameters for WalkTheseWay model (15d commands)
+gait_params:
+  gait_frequency: 2.0      # Hz, range [2.0, 4.0]
+  footswing_height: 0.35   # m, range [0.03, 0.35]
+  body_height: 0.15         # m offset, range [-0.25, 0.15]
+  body_pitch: 0.0          # rad, range [-0.4, 0.4]
+  body_roll: 0.0           # rad, fixed at 0
+  stance_width: 0.25       # m, range [0.10, 0.45]
+  stance_length: 0.4       # m
+  gait_duration: 0.5       # stance ratio
+  gait_phase_fl: 0.0       # FL leg phase offset
+  gait_phase_fr: 0.0       # FR leg phase offset
+  gait_phase_rl: 0.0       # RL leg phase offset
+  aux_reward: 0.0          # auxiliary command
+
 actions:
   JointPositionAction:
     clip:

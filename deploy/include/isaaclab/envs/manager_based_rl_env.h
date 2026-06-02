@@ -152,6 +152,20 @@ public:
     float fixed_ang_vel_z = 0.0f;
     float fixed_command_duration = 0.0f;  // 0 means indefinite
     std::chrono::steady_clock::time_point fixed_command_start_time;
+
+    // Gait parameters (configurable via deploy.yaml, used by WalkTheseWay models)
+    float gait_frequency = 3.0f;
+    float footswing_height = 0.08f;
+    float body_height = 0.0f;
+    float body_pitch = 0.0f;
+    float body_roll = 0.0f;
+    float stance_width = 0.25f;
+    float stance_length = 0.4f;
+    float gait_duration = 0.5f;
+    float gait_phase_fl = 0.0f;
+    float gait_phase_fr = 0.0f;
+    float gait_phase_rl = 0.0f;
+    float aux_reward = 0.0f;
 };
 
 };
