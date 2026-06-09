@@ -128,17 +128,8 @@ private:
         }
 
         // External automatic terrain-based transition
-        if (nextStateMode == 0)
-        {
-            int requested = externalNextStateMode.exchange(0, std::memory_order_relaxed);
 
-            // 只允许在已经进入 RL 策略状态后自动切换
-            if (requested != 0 &&
-                currentState->getStateString().rfind("Velocity_", 0) == 0)
-            {
-                nextStateMode = requested;
-            }
-        }
+            
 
         if (nextStateMode == 0)
         {
@@ -148,6 +139,34 @@ private:
                 {
                     nextStateMode = currentState->registered_checks[i].second;
                     break;
+                }
+            }
+        }
+
+        if (nextStateMode == 0)
+        {
+            int requested = externalNextStateMode.exchange(0, std::memory_order_relaxed);
+
+            if (requested != 0)
+            {
+                std::string current_name = FSMStringMap.left.at(currentStateMode);
+                std::string target_name = FSMStringMap.left.at(requested);
+
+                bool current_is_rl = current_name.rfind("Velocity_", 0) == 0;
+                bool target_is_rl = target_name.rfind("Velocity_", 0) == 0;
+                bool different_state = requested != currentStateMode;
+
+                if (current_is_rl && target_is_rl && different_state)
+                {
+                    spdlog::info("Auto terrain switch: {} -> {}", current_name, target_name);
+                    nextStateMode = requested;
+                }
+                else
+                {
+                    spdlog::debug(
+                        "Ignore auto terrain switch: current={}, target={}",
+                        current_name,
+                        target_name);
                 }
             }
         }
