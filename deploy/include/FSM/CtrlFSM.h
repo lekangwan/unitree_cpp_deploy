@@ -8,6 +8,8 @@
 #include "FSMState.h"
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
+#include <atomic>
+#include <string>
 
 class CtrlFSM
 {
@@ -16,7 +18,6 @@ public:
     {
         // Initialize FSM states
         states.push_back(std::move(initstate));
-
     }
 
     CtrlFSM(YAML::Node cfg)
@@ -38,7 +39,8 @@ public:
             int id = it->second["id"].as<int>();
             std::string fsm_type = it->second["type"] ? it->second["type"].as<std::string>() : fsm_name;
             auto fsm_class = getFsmMap().find("State_" + fsm_type);
-            if (fsm_class == getFsmMap().end()) {
+            if (fsm_class == getFsmMap().end())
+            {
                 throw std::runtime_error("FSM: Unknown FSM type " + fsm_type);
             }
             auto state_instance = fsm_class->second(id, fsm_name);
@@ -46,7 +48,7 @@ public:
         }
     }
 
-    void start() 
+    void start()
     {
         // Start From State_Passive
         currentState = states[0];
@@ -59,9 +61,9 @@ public:
 
     void add(std::shared_ptr<BaseState> state)
     {
-        for(auto & s : states)
+        for (auto &s : states)
         {
-            if(s->isState(state->getState()))
+            if (s->isState(state->getState()))
             {
                 spdlog::error("FSM: State_{} already exists", state->getStateString());
                 std::exit(0);
@@ -70,13 +72,27 @@ public:
 
         states.push_back(std::move(state));
     }
-    
+
+    void requestState(const std::string &state_name)
+    {
+        if (!FSMStringMap.right.count(state_name))
+        {
+            spdlog::warn("FSM: requested state {} not found", state_name);
+            return;
+        }
+
+        externalNextStateMode.store(
+            FSMStringMap.right.at(state_name),
+            std::memory_order_relaxed);
+    }
+
     ~CtrlFSM()
     {
         states.clear();
     }
 
     std::vector<std::shared_ptr<BaseState>> states;
+
 private:
     const double dt = 0.001;
 
@@ -85,27 +101,50 @@ private:
         currentState->pre_run();
         currentState->run();
         currentState->post_run();
-        
+
         // Check if need to change state
         int nextStateMode = 0;
 
         // Keyboard state transitions (priority, no joystick needed)
-        if (FSMState::keyboard && FSMState::keyboard->on_pressed) {
+        if (FSMState::keyboard && FSMState::keyboard->on_pressed)
+        {
             auto key = FSMState::keyboard->key();
-            if (key == "1") nextStateMode = FSMStringMap.right.at("Passive");
-            else if (key == "2") nextStateMode = FSMStringMap.right.at("FixStand");
-            else if (key == "3") nextStateMode = FSMStringMap.right.at("Velocity_Up");
-            else if (key == "4") nextStateMode = FSMStringMap.right.at("Velocity_Down");
-            else if (key == "5") nextStateMode = FSMStringMap.right.at("Velocity_Left");
-            else if (key == "6") nextStateMode = FSMStringMap.right.at("Velocity_Right");
-            else if (key == "7") nextStateMode = FSMStringMap.right.at("Velocity_SlipDog");
-            else if (key == "8") nextStateMode = FSMStringMap.right.at("Velocity_Dreamwaq");
+            if (key == "1")
+                nextStateMode = FSMStringMap.right.at("Passive");
+            else if (key == "2")
+                nextStateMode = FSMStringMap.right.at("FixStand");
+            else if (key == "3")
+                nextStateMode = FSMStringMap.right.at("Velocity_Up");
+            else if (key == "4")
+                nextStateMode = FSMStringMap.right.at("Velocity_Down");
+            else if (key == "5")
+                nextStateMode = FSMStringMap.right.at("Velocity_Left");
+            else if (key == "6")
+                nextStateMode = FSMStringMap.right.at("Velocity_Right");
+            else if (key == "7")
+                nextStateMode = FSMStringMap.right.at("Velocity_SlipDog");
+            else if (key == "8")
+                nextStateMode = FSMStringMap.right.at("Velocity_Dreamwaq");
         }
 
-        if (nextStateMode == 0) {
-            for(int i(0); i<currentState->registered_checks.size(); i++)
+        // External automatic terrain-based transition
+        if (nextStateMode == 0)
+        {
+            int requested = externalNextStateMode.exchange(0, std::memory_order_relaxed);
+
+            // 只允许在已经进入 RL 策略状态后自动切换
+            if (requested != 0 &&
+                currentState->getStateString().rfind("Velocity_", 0) == 0)
             {
-                if(currentState->registered_checks[i].first())
+                nextStateMode = requested;
+            }
+        }
+
+        if (nextStateMode == 0)
+        {
+            for (int i(0); i < currentState->registered_checks.size(); i++)
+            {
+                if (currentState->registered_checks[i].first())
                 {
                     nextStateMode = currentState->registered_checks[i].second;
                     break;
@@ -113,11 +152,11 @@ private:
             }
         }
 
-        if(nextStateMode != 0 && !currentState->isState(nextStateMode))
+        if (nextStateMode != 0 && !currentState->isState(nextStateMode))
         {
-            for(auto & state : states)
+            for (auto &state : states)
             {
-                if(state->isState(nextStateMode))
+                if (state->isState(nextStateMode))
                 {
                     spdlog::info("FSM: Change state from {} to {}", currentState->getStateString(), state->getStateString());
                     currentState->exit();
@@ -131,4 +170,5 @@ private:
 
     std::shared_ptr<BaseState> currentState;
     unitree::common::RecurrentThreadPtr fsm_thread_;
+    std::atomic<int> externalNextStateMode{0};
 };
