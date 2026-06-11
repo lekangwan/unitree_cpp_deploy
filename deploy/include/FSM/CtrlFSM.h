@@ -143,18 +143,21 @@ private:
             }
         }
 
+        // External automatic terrain-based transition
         if (nextStateMode == 0)
         {
             int requested = externalNextStateMode.exchange(0, std::memory_order_relaxed);
 
             if (requested != 0)
             {
-                std::string current_name = FSMStringMap.left.at(currentStateMode);
+                int current_mode = currentState->getState();
+
+                std::string current_name = currentState->getStateString();
                 std::string target_name = FSMStringMap.left.at(requested);
 
                 bool current_is_rl = current_name.rfind("Velocity_", 0) == 0;
                 bool target_is_rl = target_name.rfind("Velocity_", 0) == 0;
-                bool different_state = requested != currentStateMode;
+                bool different_state = requested != current_mode;
 
                 if (current_is_rl && target_is_rl && different_state)
                 {
@@ -163,7 +166,7 @@ private:
                 }
                 else
                 {
-                    spdlog::debug(
+                    spdlog::info(
                         "Ignore auto terrain switch: current={}, target={}",
                         current_name,
                         target_name);

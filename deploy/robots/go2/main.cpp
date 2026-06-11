@@ -3,13 +3,19 @@
 #include "FSM/State_FixStand.h"
 #include "FSM/State_RLBase.h"
 
-#include <rclcpp/rclcpp.hpp>
-#include "terrain_msgs/msg/terrain_result.hpp"
+// #include <rclcpp/rclcpp.hpp>
+// #include "terrain_msgs/msg/terrain_result.hpp"
 
 #include <chrono>
 #include <memory>
 #include <string>
 #include <thread>
+
+#include <atomic>
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 std::unique_ptr<LowCmd_t> FSMState::lowcmd = nullptr;
 std::shared_ptr<LowState_t> FSMState::lowstate = nullptr;
@@ -34,6 +40,100 @@ std::string terrainToFSMState(int32_t class_id)
         return "";
     }
 }
+
+
+void startTerrainUdpReceiver(CtrlFSM* fsm)
+{
+    std::thread([fsm]() {
+        int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd < 0)
+        {
+            spdlog::error("Failed to create terrain UDP socket");
+            return;
+        }
+
+        sockaddr_in addr{};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        addr.sin_port = htons(15000);
+
+        if (bind(sockfd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0)
+        {
+            spdlog::error("Failed to bind terrain UDP socket on 127.0.0.1:15000");
+            close(sockfd);
+            return;
+        }
+
+        spdlog::info("Terrain UDP receiver started on 127.0.0.1:15000");
+
+        std::string last_target_state;
+
+        while (true)
+        {
+            char buffer[256] = {0};
+            sockaddr_in sender_addr{};
+            socklen_t sender_len = sizeof(sender_addr);
+
+            ssize_t len = recvfrom(
+                sockfd,
+                buffer,
+                sizeof(buffer) - 1,
+                0,
+                reinterpret_cast<sockaddr*>(&sender_addr),
+                &sender_len
+            );
+
+            if (len <= 0)
+            {
+                continue;
+            }
+
+            buffer[len] = '\0';
+
+            int class_id = -1;
+            float similarity = 0.0f;
+
+            // UDP 格式: class_id,similarity
+            if (sscanf(buffer, "%d,%f", &class_id, &similarity) != 2)
+            {
+                spdlog::warn("Invalid terrain UDP message: {}", buffer);
+                continue;
+            }
+
+            if (similarity < 0.60f)
+            {
+                continue;
+            }
+
+            std::string target_state = terrainToFSMState(class_id);
+            if (target_state.empty())
+            {
+                spdlog::warn("Unknown terrain class_id from UDP: {}", class_id);
+                continue;
+            }
+
+            // 减少重复请求
+            if (target_state == last_target_state)
+            {
+                continue;
+            }
+
+            last_target_state = target_state;
+
+            spdlog::info(
+                "Terrain UDP received: class_id={}, similarity={:.3f}, switch request to {}",
+                class_id,
+                similarity,
+                target_state
+            );
+
+            fsm->requestState(target_state);
+        }
+
+        close(sockfd);
+    }).detach();
+}
+
 
 void print_keyboard_help()
 {
@@ -86,58 +186,60 @@ int main(int argc, char **argv)
     auto fsm = std::make_unique<CtrlFSM>(param::config["FSM"]);
     fsm->start();
 
-    // ROS2 terrain subscriber
-    rclcpp::init(argc, argv);
+    startTerrainUdpReceiver(fsm.get());
 
-    auto terrain_node = std::make_shared<rclcpp::Node>("terrain_policy_selector");
+    // // ROS2 terrain subscriber
+    // rclcpp::init(argc, argv);
 
-    auto last_target_state = std::make_shared<std::string>("");
-    auto last_switch_time = std::make_shared<std::chrono::steady_clock::time_point>(
-        std::chrono::steady_clock::now());
+    // auto terrain_node = std::make_shared<rclcpp::Node>("terrain_policy_selector");
 
-    auto terrain_sub = terrain_node->create_subscription<terrain_msgs::msg::TerrainResult>(
-        "/terrain/result", // 改成你 terrain_node.py 实际发布的话题名
-        10,
-        [fsm_ptr = fsm.get(), last_target_state, last_switch_time](const terrain_msgs::msg::TerrainResult::SharedPtr msg)
-        {
-            // 置信度过低就不切换，阈值可以按实际效果调整
-            if (msg->similarity < 0.60f)
-            {
-                return;
-            }
+    // auto last_target_state = std::make_shared<std::string>("");
+    // auto last_switch_time = std::make_shared<std::chrono::steady_clock::time_point>(
+    //     std::chrono::steady_clock::now());
 
-            std::string target_state = terrainToFSMState(msg->class_id);
-            if (target_state.empty())
-            {
-                spdlog::warn("Unknown terrain class_id: {}", msg->class_id);
-                return;
-            }
+    // auto terrain_sub = terrain_node->create_subscription<terrain_msgs::msg::TerrainResult>(
+    //     "/terrain/result", // 改成你 terrain_node.py 实际发布的话题名
+    //     10,
+    //     [fsm_ptr = fsm.get(), last_target_state, last_switch_time](const terrain_msgs::msg::TerrainResult::SharedPtr msg)
+    //     {
+    //         // 置信度过低就不切换，阈值可以按实际效果调整
+    //         if (msg->similarity < 0.60f)
+    //         {
+    //             return;
+    //         }
 
-            auto now = std::chrono::steady_clock::now();
+    //         std::string target_state = terrainToFSMState(msg->class_id);
+    //         if (target_state.empty())
+    //         {
+    //             spdlog::warn("Unknown terrain class_id: {}", msg->class_id);
+    //             return;
+    //         }
 
-            // 防抖：同一个目标状态 1 秒内不要重复触发
-            if (*last_target_state == target_state &&
-                now - *last_switch_time < std::chrono::seconds(1))
-            {
-                return;
-            }
+    //         auto now = std::chrono::steady_clock::now();
 
-            *last_target_state = target_state;
-            *last_switch_time = now;
+    //         // 防抖：同一个目标状态 1 秒内不要重复触发
+    //         if (*last_target_state == target_state &&
+    //             now - *last_switch_time < std::chrono::seconds(1))
+    //         {
+    //             return;
+    //         }
 
-            spdlog::info(
-                "Terrain detected: id={}, name={}, similarity={:.3f}, switch to {}",
-                msg->class_id,
-                msg->class_name,
-                msg->similarity,
-                target_state);
+    //         *last_target_state = target_state;
+    //         *last_switch_time = now;
 
-            fsm_ptr->requestState(target_state);
-        });
+    //         spdlog::info(
+    //             "Terrain detected: id={}, name={}, similarity={:.3f}, switch to {}",
+    //             msg->class_id,
+    //             msg->class_name,
+    //             msg->similarity,
+    //             target_state);
 
-    std::thread ros_thread([terrain_node]()
-                           { rclcpp::spin(terrain_node); });
-    ros_thread.detach();
+    //         fsm_ptr->requestState(target_state);
+    //     });
+
+    // std::thread ros_thread([terrain_node]()
+    //                        { rclcpp::spin(terrain_node); });
+    // ros_thread.detach();
 
     std::cout << "Press [L2 + A] to enter FixStand mode.\n";
     std::cout << "Then press [Start + Up/Down/Left/Right] to select and start a policy.\n";

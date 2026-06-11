@@ -9,9 +9,6 @@ add_compile_options(-I/usr/local/include)
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(yaml-cpp REQUIRED)
 
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(terrain_msgs REQUIRED)
 
 include_directories(BEFORE
   /usr/include/eigen3
@@ -42,7 +39,4 @@ link_libraries(${PROJECT_NAME}_lib)
 
 add_executable(go2_ctrl main.cpp)
 
-ament_target_dependencies(go2_ctrl
-  rclcpp
-  terrain_msgs
-)
+
